@@ -1,0 +1,81 @@
+# Flag that can be used to enable or disable a specific feature for all users
+is-enabled:
+  metadata:
+    description: Enable or disable feature X
+  variations:
+    enabled: true
+    disabled: false
+  defaultRule:
+    variation: enabled
+
+# Flag that can be used to enable a feature by id (user, store, etc)
+is-enabled-for-user:
+  metadata:
+    description: Enable feature X by Y ID
+  variations:
+    enabled: true
+    disabled: false
+  targeting:
+    - query: >-
+        {"in": [{"var": "user-id"}, ["1", "2", "3"]]}
+      variation: enabled
+  defaultRule:
+    variation: disabled
+
+# Flag that can be used to retrieve a configurable time, for example for interactions
+cr-start:
+  metadata:
+    description: Example flag for a configurable time
+  variations:
+    start: "2025-07-18T22:37:22.176Z"
+  defaultRule:
+    variation: start
+
+# Flag that can be used to get a string value,
+# as shown can also be set up with multiple options we can switch between
+ff-description:
+  metadata:
+    description: Example flag for a configurable string
+  variations:
+    christmas: "Merry Christmas!"
+    easter: "Something about chocolate eggs"
+    halloween: "Boo!"
+  defaultRule:
+    variation: easter
+
+# Flag that can be used to get an integer value,
+# as above could be set up with multiple options
+ff-number:
+  metadata:
+    description: Example flag for a configurable integer/id/etc
+  variations:
+    id: 9081
+  defaultRule:
+    variation: id
+
+# Flag that can be used to get a float value,
+# as above could be set up with multiple options
+# specifically this returns a float64
+ff-float:
+  metadata:
+    description: Example flag for a configurable float
+  variations:
+    pi: 3.14159
+  defaultRule:
+    variation: pi
+
+# Flag that can be used to get a JSON structure
+# example below could be used for configurable response times for mocks
+ff-json:
+  metadata:
+    description: Example flag for configurable JSON
+  variations:
+    p50: 40
+    p75: 50
+    p95: 70
+    p99: 150
+    p99_5: 225
+    p99_999: 500
+    default: 1200
+  defaultRule:
+    variation: p50
