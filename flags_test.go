@@ -9,19 +9,23 @@ import (
 	"time"
 )
 
+func setupClient(t *testing.T) {
+	t.Helper()
+	err := NewClient(Config{
+		PollingInterval: 10 * time.Minute,
+		Retrievers: []retriever.Retriever{
+			&fileretriever.Retriever{Path: "flags.goff.yaml"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error creating client: %v", err)
+	}
+	t.Cleanup(Close)
+}
+
 func TestGetFloat(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		f, err := GetFloat("ff-float", "1", 1.11)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
@@ -32,17 +36,7 @@ func TestGetFloat(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		f, err := GetFloat("not-there", "1", 1.11)
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -53,17 +47,7 @@ func TestGetFloat(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		f, err := GetFloat("ff-float", "", 1.11)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -77,17 +61,7 @@ func TestGetFloat(t *testing.T) {
 
 func TestGetInt(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		i, err := GetInt("ff-number", "1", 69)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
@@ -98,17 +72,7 @@ func TestGetInt(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		i, err := GetInt("not-there", "1", 69)
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -119,17 +83,7 @@ func TestGetInt(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		i, err := GetInt("ff-number", "", 69)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
@@ -143,17 +97,7 @@ func TestGetInt(t *testing.T) {
 
 func TestGetString(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		s, err := GetString("ff-description", "1", "hello")
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
@@ -164,17 +108,7 @@ func TestGetString(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		s, err := GetString("not-there", "1", "hello")
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -185,17 +119,7 @@ func TestGetString(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: "flags.goff.yaml"},
-			},
-		})
-		defer Close()
-		if err != nil {
-			t.Fatalf("unexpected error creating client: %v", err)
-		}
-
+		setupClient(t)
 		s, err := GetString("ff-description", "", "hello")
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
@@ -292,64 +216,101 @@ func TestGetString(t *testing.T) {
 //			})
 //		}
 //	}
-//
-//	func TestIsEnabled(t *testing.T) {
-//		type args struct {
-//			flag         string
-//			userID       string
-//			defaultValue bool
-//		}
-//		tests := []struct {
-//			name    string
-//			args    args
-//			want    bool
-//			wantErr bool
-//		}{
-//			// TODO: Add test cases.
-//		}
-//		for _, tt := range tests {
-//			t.Run(tt.name, func(t *testing.T) {
-//				got, err := flags.IsEnabled(tt.args.flag, tt.args.userID, tt.args.defaultValue)
-//				if (err != nil) != tt.wantErr {
-//					t.Errorf("IsEnabled() error = %v, wantErr %v", err, tt.wantErr)
-//					return
-//				}
-//				if got != tt.want {
-//					t.Errorf("IsEnabled() got = %v, want %v", got, tt.want)
-//				}
-//			})
-//		}
-//	}
-//
-//	func TestIsEnabledByID(t *testing.T) {
-//		type args struct {
-//			flag         string
-//			userID       string
-//			id           string
-//			lookup       string
-//			defaultValue bool
-//		}
-//		tests := []struct {
-//			name    string
-//			args    args
-//			want    bool
-//			wantErr bool
-//		}{
-//			// TODO: Add test cases.
-//		}
-//		for _, tt := range tests {
-//			t.Run(tt.name, func(t *testing.T) {
-//				got, err := flags.IsEnabledByID(tt.args.flag, tt.args.userID, tt.args.id, tt.args.lookup, tt.args.defaultValue)
-//				if (err != nil) != tt.wantErr {
-//					t.Errorf("IsEnabledByID() error = %v, wantErr %v", err, tt.wantErr)
-//					return
-//				}
-//				if got != tt.want {
-//					t.Errorf("IsEnabledByID() got = %v, want %v", got, tt.want)
-//				}
-//			})
-//		}
-//	}
+
+func TestIsEnabled(t *testing.T) {
+	t.Run("flag exists, returns value", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabled("is-enabled", "1", false)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if !b {
+			t.Errorf("unexpected bool: got %t want %t", b, true)
+		}
+	})
+	t.Run("flag doesnt exist, return default", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabled("not-there", "1", false)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if b {
+			t.Errorf("unexpected bool: got %t want %t", b, false)
+		}
+	})
+	t.Run("no user id, still returns value", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabled("is-enabled", "", false)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if !b {
+			t.Errorf("unexpected bool: got %t want %t", b, true)
+		}
+	})
+}
+
+func TestIsEnabledByID(t *testing.T) {
+	t.Run("flag exists, user id is in list, returns enabled", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabledByID("is-enabled-for-user", "9", "3", "user-id", false)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if !b {
+			t.Errorf("unexpected bool: got %t want %t", b, true)
+		}
+	})
+	t.Run("flag exists, user id not in list, returns disabled", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabledByID("is-enabled-for-user", "9", "4", "user-id", false)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if b {
+			t.Errorf("unexpected bool: got %t want %t", b, false)
+		}
+	})
+	t.Run("flag doesnt exist, return default", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabledByID("not-exists", "9", "4", "user-id", false)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if b {
+			t.Errorf("unexpected bool: got %t want %t", b, false)
+		}
+	})
+	t.Run("no user id in context eval, user id is in list, returns enabled", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabledByID("is-enabled-for-user", "", "3", "user-id", false)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if !b {
+			t.Errorf("unexpected bool: got %t want %t", b, true)
+		}
+	})
+	t.Run("no user id in context eval, user id not in list, returns disabled", func(t *testing.T) {
+		setupClient(t)
+		b, err := IsEnabledByID("is-enabled-for-user", "", "4", "user-id", false)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if b {
+			t.Errorf("unexpected bool: got %t want %t", b, true)
+		}
+	})
+}
+
 func TestRefresh(t *testing.T) {
 	t.Run("refresh is called and refreshed time is updated", func(t *testing.T) {
 		tmp, err := os.CreateTemp("", "")
