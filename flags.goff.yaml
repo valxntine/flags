@@ -70,12 +70,13 @@ ff-json:
   metadata:
     description: Example flag for configurable JSON
   variations:
-    p50: 40
-    p75: 50
-    p95: 70
-    p99: 150
-    p99_5: 225
-    p99_999: 500
-    default: 1200
+    times:
+      "p50": 40
+      "p75": 50
+      "p95": 70
+      "p99": 150
+      "p99_5": 225
+      "p99_999": 500
+      "default": 1200
   defaultRule:
-    variation: p50
+    variation: times

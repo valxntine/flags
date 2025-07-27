@@ -1,12 +1,14 @@
 package flags
 
 import (
-	ffclient "github.com/thomaspoignant/go-feature-flag"
-	"github.com/thomaspoignant/go-feature-flag/retriever"
-	"github.com/thomaspoignant/go-feature-flag/retriever/fileretriever"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	ffclient "github.com/thomaspoignant/go-feature-flag"
+	"github.com/thomaspoignant/go-feature-flag/retriever"
+	"github.com/thomaspoignant/go-feature-flag/retriever/fileretriever"
 )
 
 func setupClient(t *testing.T) {
@@ -158,35 +160,86 @@ func TestGetString(t *testing.T) {
 //			})
 //		}
 //	}
-//
-//	func TestGetJSONStruct(t *testing.T) {
-//		type args[T any] struct {
-//			flag         string
-//			userID       string
-//			defaultValue flags.T
-//		}
-//		type testCase[T any] struct {
-//			name    string
-//			args    args[T]
-//			want    flags.T
-//			wantErr bool
-//		}
-//		tests := []testCase[ /* TODO: Insert concrete types here */ ]{
-//			// TODO: Add test cases.
-//		}
-//		for _, tt := range tests {
-//			t.Run(tt.name, func(t *testing.T) {
-//				got, err := flags.GetJSONStruct(tt.args.flag, tt.args.userID, tt.args.defaultValue)
-//				if (err != nil) != tt.wantErr {
-//					t.Errorf("GetJSONStruct() error = %v, wantErr %v", err, tt.wantErr)
-//					return
-//				}
-//				if !reflect.DeepEqual(got, tt.want) {
-//					t.Errorf("GetJSONStruct() got = %v, want %v", got, tt.want)
-//				}
-//			})
-//		}
-//	}
+
+func TestGetJSONStruct(t *testing.T) {
+	type ResponseTimes struct {
+		P50     int `json:"p50"`
+		P75     int `json:"p75"`
+		P95     int `json:"p95"`
+		P99     int `json:"p99"`
+		P99_5   int `json:"p99_5"`
+		P99_999 int `json:"p99_999"`
+		Def     int `json:"default"`
+	}
+
+	defaultResponseTimes := ResponseTimes{
+		P50:     50,
+		P75:     75,
+		P95:     95,
+		P99:     99,
+		P99_5:   995,
+		P99_999: 99999,
+		Def:     0,
+	}
+
+	expectedResponseTimes := ResponseTimes{
+		P50:     40,
+		P75:     50,
+		P95:     70,
+		P99:     150,
+		P99_5:   225,
+		P99_999: 500,
+		Def:     1200,
+	}
+	t.Run("flag exists, returns struct", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetJSONStruct[ResponseTimes](
+			"ff-json",
+			"1",
+			defaultResponseTimes,
+		)
+		if err != nil {
+			t.Fatalf("unexpected error getting json: %v", err)
+		}
+
+		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
+			t.Errorf("unexpected struct (-got +want)\n%s", diff)
+		}
+	})
+	t.Run("flag doesnt exist, returns default", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetJSONStruct[ResponseTimes](
+			"not-exists",
+			"1",
+			defaultResponseTimes,
+		)
+		// error is returned, but so is default value
+		if err == nil {
+			t.Fatal("expected error but got nil")
+		}
+
+		if diff := cmp.Diff(s, defaultResponseTimes); diff != "" {
+			t.Errorf("unexpected struct (-got +want)\n%s", diff)
+		}
+	})
+	t.Run("no user id provided, returns flag value", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetJSONStruct[ResponseTimes](
+			"ff-json",
+			"",
+			defaultResponseTimes,
+		)
+		// error is returned, but so is default value
+		if err != nil {
+			t.Fatalf("unexpected error getting json: %v", err)
+		}
+
+		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
+			t.Errorf("unexpected struct (-got +want)\n%s", diff)
+		}
+	})
+}
+
 func TestGetTime(t *testing.T) {
 	expected, err := time.Parse(time.RFC3339, "2025-07-18T22:37:22.176Z")
 	if err != nil {

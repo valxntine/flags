@@ -93,32 +93,31 @@ func GetJSONStruct[T any](flag, userID string, defaultValue T) (T, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
-	var zero T
 	c := ffcontext.NewEvaluationContext(userID)
 
 	defaultBytes, err := json.Marshal(defaultValue)
 	if err != nil {
-		return zero, fmt.Errorf("failed to marshal default value: %w", err)
+		return defaultValue, fmt.Errorf("failed to marshal default value: %w", err)
 	}
 
 	var defaultMap map[string]any
 	if err = json.Unmarshal(defaultBytes, &defaultMap); err != nil {
-		return zero, fmt.Errorf("failed to unmarshal default value to map: %w", err)
+		return defaultValue, fmt.Errorf("failed to unmarshal default value to map: %w", err)
 	}
 
 	j, err := ffclient.JSONVariation(flag, c, defaultMap)
 	if err != nil {
-		return zero, fmt.Errorf("failed to get flag %s: %w", flag, err)
+		return defaultValue, fmt.Errorf("failed to get flag %s: %w", flag, err)
 	}
 
 	result, err := json.Marshal(j)
 	if err != nil {
-		return zero, fmt.Errorf("failed to marshal result to target: %w", err)
+		return defaultValue, fmt.Errorf("failed to marshal result to target: %w", err)
 	}
 
 	var v T
 	if err = json.Unmarshal(result, &v); err != nil {
-		return zero, fmt.Errorf("failed to unmarshal flag to target: %w", err)
+		return defaultValue, fmt.Errorf("failed to unmarshal flag to target: %w", err)
 	}
 
 	return v, nil
