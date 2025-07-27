@@ -133,33 +133,74 @@ func TestGetString(t *testing.T) {
 	})
 }
 
-//	func TestGetJSONMap(t *testing.T) {
-//		type args struct {
-//			flag         string
-//			userID       string
-//			defaultValue map[string]any
-//		}
-//		tests := []struct {
-//			name    string
-//			args    args
-//			want    map[string]any
-//			wantErr bool
-//		}{
-//			// TODO: Add test cases.
-//		}
-//		for _, tt := range tests {
-//			t.Run(tt.name, func(t *testing.T) {
-//				got, err := flags.GetJSONMap(tt.args.flag, tt.args.userID, tt.args.defaultValue)
-//				if (err != nil) != tt.wantErr {
-//					t.Errorf("GetJSONMap() error = %v, wantErr %v", err, tt.wantErr)
-//					return
-//				}
-//				if !reflect.DeepEqual(got, tt.want) {
-//					t.Errorf("GetJSONMap() got = %v, want %v", got, tt.want)
-//				}
-//			})
-//		}
-//	}
+func TestGetJSONMap(t *testing.T) {
+	defaultResponseTimes := map[string]any{
+		"p50":     50,
+		"p75":     75,
+		"p95":     95,
+		"p99":     99,
+		"p99_5":   995,
+		"p99_999": 99999,
+		"default": 0,
+	}
+
+	expectedResponseTimes := map[string]any{
+		"p50":     40,
+		"p75":     50,
+		"p95":     70,
+		"p99":     150,
+		"p99_5":   225,
+		"p99_999": 500,
+		"default": 1200,
+	}
+	t.Run("flag exists, returns struct", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetJSONMap(
+			"ff-json",
+			"1",
+			defaultResponseTimes,
+		)
+		if err != nil {
+			t.Fatalf("unexpected error getting json: %v", err)
+		}
+
+		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
+			t.Errorf("unexpected struct (-got +want)\n%s", diff)
+		}
+	})
+	t.Run("flag doesnt exist, returns default", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetJSONMap(
+			"not-exists",
+			"1",
+			defaultResponseTimes,
+		)
+		// error is returned, but so is default value
+		if err == nil {
+			t.Fatal("expected error but got nil")
+		}
+
+		if diff := cmp.Diff(s, defaultResponseTimes); diff != "" {
+			t.Errorf("unexpected struct (-got +want)\n%s", diff)
+		}
+	})
+	t.Run("no user id provided, returns flag value", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetJSONMap(
+			"ff-json",
+			"",
+			defaultResponseTimes,
+		)
+		// error is returned, but so is default value
+		if err != nil {
+			t.Fatalf("unexpected error getting json: %v", err)
+		}
+
+		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
+			t.Errorf("unexpected struct (-got +want)\n%s", diff)
+		}
+	})
+}
 
 func TestGetJSONStruct(t *testing.T) {
 	type ResponseTimes struct {
