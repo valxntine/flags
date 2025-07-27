@@ -187,35 +187,65 @@ func TestGetString(t *testing.T) {
 //			})
 //		}
 //	}
-//
-//	func TestGetTime(t *testing.T) {
-//		type args struct {
-//			flag         string
-//			userID       string
-//			layout       string
-//			defaultValue time.Time
-//		}
-//		tests := []struct {
-//			name    string
-//			args    args
-//			want    time.Time
-//			wantErr bool
-//		}{
-//			// TODO: Add test cases.
-//		}
-//		for _, tt := range tests {
-//			t.Run(tt.name, func(t *testing.T) {
-//				got, err := flags.GetTime(tt.args.flag, tt.args.userID, tt.args.layout, tt.args.defaultValue)
-//				if (err != nil) != tt.wantErr {
-//					t.Errorf("GetTime() error = %v, wantErr %v", err, tt.wantErr)
-//					return
-//				}
-//				if !reflect.DeepEqual(got, tt.want) {
-//					t.Errorf("GetTime() got = %v, want %v", got, tt.want)
-//				}
-//			})
-//		}
-//	}
+func TestGetTime(t *testing.T) {
+	expected, err := time.Parse(time.RFC3339, "2025-07-18T22:37:22.176Z")
+	if err != nil {
+		t.Fatalf("failed to parse expected time: %v", err)
+	}
+
+	defaultTime, err := time.Parse(time.RFC3339, "2099-12-31T23:59:59.999Z")
+	if err != nil {
+		t.Fatalf("failed to parse default time: %v", err)
+	}
+	t.Run("flag exists, returns value", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetTime(
+			"cr-start",
+			"1",
+			time.RFC3339,
+			defaultTime,
+		)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if s != expected {
+			t.Errorf("unexpected time: got %s want %s", s, expected)
+		}
+	})
+	t.Run("flag doesnt exist, return default", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetTime(
+			"not-there",
+			"1",
+			time.RFC3339,
+			defaultTime,
+		)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if s != defaultTime {
+			t.Errorf("unexpected time: got %s want %s", s, defaultTime)
+		}
+	})
+	t.Run("no user id, still returns value", func(t *testing.T) {
+		setupClient(t)
+		s, err := GetTime(
+			"cr-start",
+			"",
+			time.RFC3339,
+			defaultTime,
+		)
+		if err != nil {
+			t.Fatalf("unexpected error getting flag value: %v", err)
+		}
+
+		if s != expected {
+			t.Errorf("unexpected time: got %s want %s", s, expected)
+		}
+	})
+}
 
 func TestIsEnabled(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {

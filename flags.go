@@ -56,11 +56,11 @@ func GetTime(flag, userID, layout string, defaultValue time.Time) (time.Time, er
 	c := ffcontext.NewEvaluationContext(userID)
 	s, err := ffclient.StringVariation(flag, c, defaultValue.Format(layout))
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to get flag %s: %w", flag, err)
+		return defaultValue, fmt.Errorf("failed to get flag %s: %w", flag, err)
 	}
 	t, err := time.Parse(layout, s)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse time %s into layout %s: %w", s, layout, err)
+		return defaultValue, fmt.Errorf("failed to parse time %s into layout %s: %w", s, layout, err)
 	}
 	return t, nil
 }
