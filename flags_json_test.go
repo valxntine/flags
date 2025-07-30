@@ -1,122 +1,109 @@
 package flags
 
 import (
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	ffclient "github.com/thomaspoignant/go-feature-flag"
-	"github.com/thomaspoignant/go-feature-flag/retriever"
-	"github.com/thomaspoignant/go-feature-flag/retriever/fileretriever"
 )
 
 func TestGetFloatJSON(t *testing.T) {
-	t.Run("flag exists, returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		f, err := GetFloat("ff-float", "1", 1.11, c, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
+	tests := []struct {
+		name     string
+		userID   string
+		expected float64
+		flag     string
+	}{
+		{"flag exists, returns value", "1", 3.14159, floatFlagName},
+		{"flag doesnt exist, returns default", "1", 1.11, notExistsFlagName},
+		{"no user id, still returns flag value", "", 3.14159, floatFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			f, err := GetFloat(tt.flag, tt.userID, 1.11, c)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if f != 3.14159 {
-			t.Errorf("unexpected float: got %f want %f", f, 3.14159)
-		}
-	})
-	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		f, err := GetFloat("not-there", "1", 1.11, c, c)
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-
-		if f != 1.11 {
-			t.Errorf("unexpected float: got %f want %f", f, 1.11)
-		}
-	})
-	t.Run("no user id, still returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		f, err := GetFloat("ff-float", "", 1.11, c, c)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		if f != 3.14159 {
-			t.Errorf("unexpected float: got %f want %f", f, 3.14159)
-		}
-	})
+			if f != tt.expected {
+				t.Errorf("unexpected float: got %f want %f", f, tt.expected)
+			}
+		})
+	}
 }
 
 func TestGetIntJSON(t *testing.T) {
-	t.Run("flag exists, returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		i, err := GetInt("ff-number", "1", 69, c, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
+	tests := []struct {
+		name     string
+		userID   string
+		expected int
+		flag     string
+	}{
+		{"flag exists, returns value", "1", 9081, numberFlagName},
+		{"flag doesnt exist, returns default", "1", 69, notExistsFlagName},
+		{"no user id, still returns flag value", "", 9081, numberFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			i, err := GetInt(tt.flag, tt.userID, 69, c)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if i != 9081 {
-			t.Errorf("unexpected int: got %d want %d", i, 9081)
-		}
-	})
-	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		i, err := GetInt("not-there", "1", 69, c, c)
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-
-		if i != 69 {
-			t.Errorf("unexpected int: got %d want %d", i, 69)
-		}
-	})
-	t.Run("no user id, still returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		i, err := GetInt("ff-number", "", 69, c, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
-
-		if i != 9081 {
-			t.Errorf("unexpected int: got %d want %d", i, 9081)
-		}
-	})
+			if i != tt.expected {
+				t.Errorf("unexpected float: got %d want %d", i, tt.expected)
+			}
+		})
+	}
 }
 
 func TestGetStringJSON(t *testing.T) {
-	t.Run("flag exists, returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetString("ff-description", "1", "hello", c, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
+	tests := []struct {
+		name     string
+		userID   string
+		expected string
+		flag     string
+	}{
+		{"flag exists, returns value", "1", "Something about chocolate eggs", descriptionFlagName},
+		{"flag doesnt exist, returns default", "1", "hello", notExistsFlagName},
+		{"no user id, still returns flag value", "", "Something about chocolate eggs", descriptionFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			s, err := GetString(tt.flag, tt.userID, "hello", c)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if s != "Something about chocolate eggs" {
-			t.Errorf("unexpected string: got %s want %s", s, "Something about chocolate eggs")
-		}
-	})
-	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetString("not-there", "1", "hello", c, c)
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-
-		if s != "hello" {
-			t.Errorf("unexpected string: got %s want %s", s, "hello")
-		}
-	})
-	t.Run("no user id, still returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetString("ff-description", "", "hello", c, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
-
-		if s != "Something about chocolate eggs" {
-			t.Errorf("unexpected string: got %s want %s", s, "Something about chocolate eggs")
-		}
-	})
+			if s != tt.expected {
+				t.Errorf("unexpected float: got %s want %s", s, tt.expected)
+			}
+		})
+	}
 }
 
 func TestGetJSONMapJSON(t *testing.T) {
@@ -143,56 +130,41 @@ func TestGetJSONMapJSON(t *testing.T) {
 		"p99_999": 500.,
 		"default": 1200.,
 	}
-	t.Run("flag exists, returns struct", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetJSONMap(
-			"ff-json",
-			"1",
-			defaultResponseTimes,
-			c,
-		)
-		if err != nil {
-			t.Fatalf("unexpected error getting json: %v", err)
-		}
+	tests := []struct {
+		name     string
+		userID   string
+		expected map[string]any
+		flag     string
+	}{
+		{"flag exists, returns value", "1", expectedResponseTimes, jsonFlagName},
+		{"flag doesnt exist, returns default", "1", defaultResponseTimes, notExistsFlagName},
+		{"no user id, still returns flag value", "", expectedResponseTimes, jsonFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			j, err := GetJSONMap(
+				tt.flag,
+				tt.userID,
+				defaultResponseTimes,
+				c,
+			)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
-			t.Errorf("unexpected struct (-got +want)\n%s", diff)
-		}
-	})
-	t.Run("flag doesnt exist, returns default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetJSONMap(
-			"not-exists",
-			"1",
-			defaultResponseTimes,
-			c,
-		)
-		// error is returned, but so is default value
-		if err == nil {
-			t.Fatal("expected error but got nil")
-		}
-
-		if diff := cmp.Diff(s, defaultResponseTimes); diff != "" {
-			t.Errorf("unexpected struct (-got +want)\n%s", diff)
-		}
-	})
-	t.Run("no user id provided, returns flag value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetJSONMap(
-			"ff-json",
-			"",
-			defaultResponseTimes,
-			c,
-		)
-		// error is returned, but so is default value
-		if err != nil {
-			t.Fatalf("unexpected error getting json: %v", err)
-		}
-
-		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
-			t.Errorf("unexpected struct (-got +want)\n%s", diff)
-		}
-	})
+			if diff := cmp.Diff(j, tt.expected); diff != "" {
+				t.Errorf("unexpected struct (-got +want)\n%s", diff)
+			}
+		})
+	}
 }
 
 func TestGetJSONStructJSON(t *testing.T) {
@@ -225,60 +197,45 @@ func TestGetJSONStructJSON(t *testing.T) {
 		P99_999: 500,
 		Def:     1200,
 	}
-	t.Run("flag exists, returns struct", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetJSONStruct[ResponseTimes](
-			"ff-json",
-			"1",
-			defaultResponseTimes,
-			c,
-		)
-		if err != nil {
-			t.Fatalf("unexpected error getting json: %v", err)
-		}
+	tests := []struct {
+		name     string
+		userID   string
+		expected ResponseTimes
+		flag     string
+	}{
+		{"flag exists, returns value", "1", expectedResponseTimes, jsonFlagName},
+		{"flag doesnt exist, returns default", "1", defaultResponseTimes, notExistsFlagName},
+		{"no user id, still returns flag value", "", expectedResponseTimes, jsonFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			j, err := GetJSONStruct[ResponseTimes](
+				tt.flag,
+				tt.userID,
+				defaultResponseTimes,
+				c,
+			)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
-			t.Errorf("unexpected struct (-got +want)\n%s", diff)
-		}
-	})
-	t.Run("flag doesnt exist, returns default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetJSONStruct[ResponseTimes](
-			"not-exists",
-			"1",
-			defaultResponseTimes,
-			c,
-		)
-		// error is returned, but so is default value
-		if err == nil {
-			t.Fatal("expected error but got nil")
-		}
-
-		if diff := cmp.Diff(s, defaultResponseTimes); diff != "" {
-			t.Errorf("unexpected struct (-got +want)\n%s", diff)
-		}
-	})
-	t.Run("no user id provided, returns flag value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetJSONStruct[ResponseTimes](
-			"ff-json",
-			"",
-			defaultResponseTimes,
-			c,
-		)
-		// error is returned, but so is default value
-		if err != nil {
-			t.Fatalf("unexpected error getting json: %v", err)
-		}
-
-		if diff := cmp.Diff(s, expectedResponseTimes); diff != "" {
-			t.Errorf("unexpected struct (-got +want)\n%s", diff)
-		}
-	})
+			if diff := cmp.Diff(j, tt.expected); diff != "" {
+				t.Errorf("unexpected struct (-got +want)\n%s", diff)
+			}
+		})
+	}
 }
 
 func TestGetTimeJSON(t *testing.T) {
-	expected, err := time.Parse(time.RFC3339, "2025-07-18T22:37:22.176Z")
+	expectedTime, err := time.Parse(time.RFC3339, "2025-07-18T22:37:22.176Z")
 	if err != nil {
 		t.Fatalf("failed to parse expected time: %v", err)
 	}
@@ -287,357 +244,176 @@ func TestGetTimeJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse default time: %v", err)
 	}
-	t.Run("flag exists, returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetTime(
-			"cr-start",
-			"1",
-			time.RFC3339,
-			defaultTime,
-			c,
-		)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
+	tests := []struct {
+		name     string
+		userID   string
+		expected time.Time
+		flag     string
+	}{
+		{"flag exists, returns value", "1", expectedTime, timeFlagName},
+		{"flag doesnt exist, returns default", "1", defaultTime, notExistsFlagName},
+		{"no user id, still returns flag value", "", expectedTime, timeFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			ti, err := GetTime(tt.flag, tt.userID, time.RFC3339, defaultTime, c)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if s != expected {
-			t.Errorf("unexpected time: got %s want %s", s, expected)
-		}
-	})
-	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetTime(
-			"not-there",
-			"1",
-			time.RFC3339,
-			defaultTime,
-			c,
-		)
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-
-		if s != defaultTime {
-			t.Errorf("unexpected time: got %s want %s", s, defaultTime)
-		}
-	})
-	t.Run("no user id, still returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		s, err := GetTime(
-			"cr-start",
-			"",
-			time.RFC3339,
-			defaultTime,
-			c,
-		)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
-
-		if s != expected {
-			t.Errorf("unexpected time: got %s want %s", s, expected)
-		}
-	})
+			if ti != tt.expected {
+				t.Errorf("unexpected float: got %s want %s", ti, tt.expected)
+			}
+		})
+	}
 }
 
 func TestIsEnabledJSON(t *testing.T) {
-	t.Run("flag exists, returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabled("is-enabled", "1", false, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
+	tests := []struct {
+		name     string
+		userID   string
+		expected bool
+		flag     string
+	}{
+		{"flag exists, returns value", "1", true, isEnabledFlagName},
+		{"flag doesnt exist, returns default", "1", false, notExistsFlagName},
+		{"no user id, still returns flag value", "", true, isEnabledFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			b, err := IsEnabled(tt.flag, tt.userID, false, c)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if !b {
-			t.Errorf("unexpected bool: got %t want %t", b, true)
-		}
-	})
-	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabled("not-there", "1", false, c)
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-
-		if b {
-			t.Errorf("unexpected bool: got %t want %t", b, false)
-		}
-	})
-	t.Run("no user id, still returns value", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabled("is-enabled", "", false, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
-
-		if !b {
-			t.Errorf("unexpected bool: got %t want %t", b, true)
-		}
-	})
+			if b != tt.expected {
+				t.Errorf("unexpected float: got %t want %t", b, tt.expected)
+			}
+		})
+	}
 }
 
 func TestIsEnabledByIDJSON(t *testing.T) {
-	t.Run("flag exists, user id is in list, returns enabled", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabledByID("is-enabled-for-user", "9", "3", "user-id", false, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
+	tests := []struct {
+		name      string
+		userID    string
+		ctxUserID string
+		expected  bool
+		flag      string
+	}{
+		{"flag exists, user id in list, returns enabled", "1", "1", true, enabledByIDFlagName},
+		{"flag exists, user id not in list, returns disabled", "4", "4", false, enabledByIDFlagName},
+		{"flag doesnt exist, returns default", "1", "1", false, notExistsFlagName},
+		{"no user id in context eval, user id is in list, returns enabled", "1", "", true, enabledByIDFlagName},
+		{"no user id in context eval, user id not in list, returns disabled", "4", "", false, enabledByIDFlagName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := setupClient(t, jsonFlagFileName)
+			b, err := IsEnabledByID(tt.flag, tt.ctxUserID, tt.userID, "user-id", false, c)
+			if tt.flag == notExistsFlagName {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error getting flag value: %v", err)
+				}
+			}
 
-		if !b {
-			t.Errorf("unexpected bool: got %t want %t", b, true)
-		}
-	})
-	t.Run("flag exists, user id not in list, returns disabled", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabledByID("is-enabled-for-user", "9", "4", "user-id", false, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
-
-		if b {
-			t.Errorf("unexpected bool: got %t want %t", b, false)
-		}
-	})
-	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabledByID("not-exists", "9", "4", "user-id", false, c)
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-
-		if b {
-			t.Errorf("unexpected bool: got %t want %t", b, false)
-		}
-	})
-	t.Run("no user id in context eval, user id is in list, returns enabled", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabledByID("is-enabled-for-user", "", "3", "user-id", false, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
-
-		if !b {
-			t.Errorf("unexpected bool: got %t want %t", b, true)
-		}
-	})
-	t.Run("no user id in context eval, user id not in list, returns disabled", func(t *testing.T) {
-		c := setupClient(t, "flags.goff.json")
-		b, err := IsEnabledByID("is-enabled-for-user", "", "4", "user-id", false, c)
-		if err != nil {
-			t.Fatalf("unexpected error getting flag value: %v", err)
-		}
-
-		if b {
-			t.Errorf("unexpected bool: got %t want %t", b, true)
-		}
-	})
+			if b != tt.expected {
+				t.Errorf("unexpected float: got %t want %t", b, tt.expected)
+			}
+		})
+	}
 }
 
 func TestIsEnabledByIDListJSON(t *testing.T) {
-	t.Run("item is an int", func(t *testing.T) {
-		t.Run("flag exists, user id is in list, returns enabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list", "9", 3, false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if !b {
-				t.Errorf("unexpected bool: got %t want %t", b, true)
-			}
-		})
-		t.Run("flag exists, user id not in list, returns disabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list", "9", 4, false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if b {
-				t.Errorf("unexpected bool: got %t want %t", b, false)
-			}
-		})
-		t.Run("flag doesnt exist, return default", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("not-exists", "9", 4, false, c)
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-
-			if b {
-				t.Errorf("unexpected bool: got %t want %t", b, false)
-			}
-		})
-		t.Run("no user id in context eval, user id is in list, returns enabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list", "", 3, false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if !b {
-				t.Errorf("unexpected bool: got %t want %t", b, true)
-			}
-		})
-		t.Run("no user id in context eval, user id not in list, returns disabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list", "", 4, false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if b {
-				t.Errorf("unexpected bool: got %t want %t", b, true)
-			}
-		})
-	})
-	t.Run("item is a string", func(t *testing.T) {
-		t.Run("flag exists, user id is in list, returns enabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list-string", "9", "3", false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if !b {
-				t.Errorf("unexpected bool: got %t want %t", b, true)
-			}
-		})
-		t.Run("flag exists, user id not in list, returns disabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list-string", "9", "4", false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if b {
-				t.Errorf("unexpected bool: got %t want %t", b, false)
-			}
-		})
-		t.Run("flag doesnt exist, return default", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("not-exists", "9", "4", false, c)
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-
-			if b {
-				t.Errorf("unexpected bool: got %t want %t", b, false)
-			}
-		})
-		t.Run("no user id in context eval, user id is in list, returns enabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list-string", "", "3", false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if !b {
-				t.Errorf("unexpected bool: got %t want %t", b, true)
-			}
-		})
-		t.Run("no user id in context eval, user id not in list, returns disabled", func(t *testing.T) {
-			c := setupClient(t, "flags.goff.json")
-			b, err := IsEnabledByIDList("ff-json-list-string", "", "4", false, c)
-			if err != nil {
-				t.Fatalf("unexpected error getting flag value: %v", err)
-			}
-
-			if b {
-				t.Errorf("unexpected bool: got %t want %t", b, true)
-			}
-		})
-	})
-}
-
-func TestRefreshJSON(t *testing.T) {
-	t.Run("refresh is called and refreshed time is updated", func(t *testing.T) {
-		tmp, err := os.CreateTemp("", "")
-		if err != nil {
-			t.Fatalf("unexpected error creating temp file: %v", err)
+	t.Run("id is an int", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			lookupID  int
+			ctxUserID string
+			expected  bool
+			flag      string
+		}{
+			{"flag exists, user id in list, returns enabled", 1, "1", true, idListIntFlag},
+			{"flag exists, user id not in list, returns disabled", 4, "4", false, idListIntFlag},
+			{"flag doesnt exist, returns default", 1, "1", false, notExistsFlagName},
+			{"no user id in context eval, user id is in list, returns enabled", 1, "", true, idListIntFlag},
+			{"no user id in context eval, user id not in list, returns disabled", 4, "", false, idListIntFlag},
 		}
-		defer func() {
-			_ = os.Remove(tmp.Name())
-		}()
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				c := setupClient(t, jsonFlagFileName)
+				b, err := IsEnabledByIDList(tt.flag, tt.ctxUserID, tt.lookupID, false, c)
+				if tt.flag == notExistsFlagName {
+					if err == nil {
+						t.Fatalf("expected error but got nil")
+					}
+				} else {
+					if err != nil {
+						t.Fatalf("unexpected error getting flag value: %v", err)
+					}
+				}
 
-		flags, err := os.ReadFile("flags.goff.yaml")
-		if err != nil {
-			t.Fatalf("unexpected error reading flags: %v", err)
-		}
-
-		err = os.WriteFile(tmp.Name(), flags, os.ModePerm)
-		if err != nil {
-			t.Fatalf("unexpected error writing to temp file: %v", err)
-		}
-
-		err = NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: tmp.Name()},
-			},
-		})
-		if err != nil {
-			t.Fatalf("unexpected error creating temp file: %v", err)
-		}
-		defer Close()
-
-		refreshTime := ffclient.GetCacheRefreshDate()
-
-		newFlag := `ff-test:
-  metadata:
-    description: test
-  variations:
-    e: 2.71828
-  defaultRule:
-    variation: e
-`
-
-		f, err := os.OpenFile(tmp.Name(), os.O_WRONLY|os.O_APPEND, 0644)
-		if err != nil {
-			t.Fatalf("failed to open file for appending: %v", err)
-		}
-		defer f.Close()
-
-		_, err = f.WriteString(newFlag)
-		if err != nil {
-			t.Fatalf("failed to write new flag to file: %v", err)
-		}
-
-		if refreshTime != ffclient.GetCacheRefreshDate() {
-			t.Fatal("cache refreshed unexpectedly")
-		}
-
-		Refresh()
-
-		if refreshTime == ffclient.GetCacheRefreshDate() {
-			t.Error("expected refresh time to have updated")
+				if b != tt.expected {
+					t.Errorf("unexpected float: got %t want %t", b, tt.expected)
+				}
+			})
 		}
 	})
-}
-
-func TestNewClientJSON(t *testing.T) {
-	t.Run("flag file isnt available", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Second,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{
-					Path: "non-existent.goff.yaml",
-				},
-			},
-		})
-
-		if err == nil {
-			t.Errorf("expected error but got nil")
+	t.Run("id is a string", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			lookupID  string
+			ctxUserID string
+			expected  bool
+			flag      string
+		}{
+			{"flag exists, user id in list, returns enabled", "1", "1", true, idListStringFlag},
+			{"flag exists, user id not in list, returns disabled", "4", "4", false, idListStringFlag},
+			{"flag doesnt exist, returns default", "1", "1", false, notExistsFlagName},
+			{"no user id in context eval, user id is in list, returns enabled", "1", "", true, idListStringFlag},
+			{"no user id in context eval, user id not in list, returns disabled", "4", "", false, idListStringFlag},
 		}
-	})
-	t.Run("no retrievers passed in", func(t *testing.T) {
-		err := NewClient(Config{
-			PollingInterval: 10 * time.Second,
-		})
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				c := setupClient(t, jsonFlagFileName)
+				b, err := IsEnabledByIDList(tt.flag, tt.ctxUserID, tt.lookupID, false, c)
+				if tt.flag == notExistsFlagName {
+					if err == nil {
+						t.Fatalf("expected error but got nil")
+					}
+				} else {
+					if err != nil {
+						t.Fatalf("unexpected error getting flag value: %v", err)
+					}
+				}
 
-		if err == nil {
-			t.Errorf("expected error but got nil")
+				if b != tt.expected {
+					t.Errorf("unexpected float: got %t want %t", b, tt.expected)
+				}
+			})
 		}
 	})
 }
