@@ -12,13 +12,13 @@ import (
 	"github.com/thomaspoignant/go-feature-flag/retriever/fileretriever"
 )
 
-func setupClient(t *testing.T, filename string) {
+func setupClient(t *testing.T, filename string) *ffclient.GoFeatureFlag {
 	t.Helper()
 	fileType := "yaml"
 	if strings.Contains(filename, "json") {
 		fileType = "json"
 	}
-	err := NewClient(Config{
+	c, err := ffclient.New(ffclient.Config{
 		PollingInterval: 10 * time.Minute,
 		Retrievers: []retriever.Retriever{
 			&fileretriever.Retriever{Path: filename},
@@ -28,13 +28,15 @@ func setupClient(t *testing.T, filename string) {
 	if err != nil {
 		t.Fatalf("unexpected error creating client: %v", err)
 	}
-	t.Cleanup(Close)
+	return c
 }
 
 func TestGetFloat(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		f, err := GetFloat("ff-float", "1", 1.11)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+
+		f, err := GetFloat("ff-float", "1", 1.11, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -44,8 +46,9 @@ func TestGetFloat(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		f, err := GetFloat("not-there", "1", 1.11)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		f, err := GetFloat("not-there", "1", 1.11, c)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -55,8 +58,9 @@ func TestGetFloat(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		f, err := GetFloat("ff-float", "", 1.11)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		f, err := GetFloat("ff-float", "", 1.11, c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -69,8 +73,9 @@ func TestGetFloat(t *testing.T) {
 
 func TestGetInt(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		i, err := GetInt("ff-number", "1", 69)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		i, err := GetInt("ff-number", "1", 69, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -80,8 +85,9 @@ func TestGetInt(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		i, err := GetInt("not-there", "1", 69)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		i, err := GetInt("not-there", "1", 69, c)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -91,8 +97,9 @@ func TestGetInt(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		i, err := GetInt("ff-number", "", 69)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		i, err := GetInt("ff-number", "", 69, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -105,8 +112,9 @@ func TestGetInt(t *testing.T) {
 
 func TestGetString(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		s, err := GetString("ff-description", "1", "hello")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		s, err := GetString("ff-description", "1", "hello", c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -116,8 +124,9 @@ func TestGetString(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		s, err := GetString("not-there", "1", "hello")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		s, err := GetString("not-there", "1", "hello", c)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -127,8 +136,9 @@ func TestGetString(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		s, err := GetString("ff-description", "", "hello")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		s, err := GetString("ff-description", "", "hello", c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -160,11 +170,13 @@ func TestGetJSONMap(t *testing.T) {
 		"default": 1200,
 	}
 	t.Run("flag exists, returns struct", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetJSONMap(
 			"ff-json",
 			"1",
 			defaultResponseTimes,
+			c,
 		)
 		if err != nil {
 			t.Fatalf("unexpected error getting json: %v", err)
@@ -175,11 +187,13 @@ func TestGetJSONMap(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, returns default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetJSONMap(
 			"not-exists",
 			"1",
 			defaultResponseTimes,
+			c,
 		)
 		// error is returned, but so is default value
 		if err == nil {
@@ -191,11 +205,13 @@ func TestGetJSONMap(t *testing.T) {
 		}
 	})
 	t.Run("no user id provided, returns flag value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetJSONMap(
 			"ff-json",
 			"",
 			defaultResponseTimes,
+			c,
 		)
 		// error is returned, but so is default value
 		if err != nil {
@@ -239,11 +255,13 @@ func TestGetJSONStruct(t *testing.T) {
 		Def:     1200,
 	}
 	t.Run("flag exists, returns struct", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetJSONStruct[ResponseTimes](
 			"ff-json",
 			"1",
 			defaultResponseTimes,
+			c,
 		)
 		if err != nil {
 			t.Fatalf("unexpected error getting json: %v", err)
@@ -254,11 +272,13 @@ func TestGetJSONStruct(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, returns default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetJSONStruct[ResponseTimes](
 			"not-exists",
 			"1",
 			defaultResponseTimes,
+			c,
 		)
 		// error is returned, but so is default value
 		if err == nil {
@@ -270,11 +290,13 @@ func TestGetJSONStruct(t *testing.T) {
 		}
 	})
 	t.Run("no user id provided, returns flag value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetJSONStruct[ResponseTimes](
 			"ff-json",
 			"",
 			defaultResponseTimes,
+			c,
 		)
 		// error is returned, but so is default value
 		if err != nil {
@@ -298,12 +320,14 @@ func TestGetTime(t *testing.T) {
 		t.Fatalf("failed to parse default time: %v", err)
 	}
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetTime(
 			"cr-start",
 			"1",
 			time.RFC3339,
 			defaultTime,
+			c,
 		)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
@@ -314,12 +338,14 @@ func TestGetTime(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetTime(
 			"not-there",
 			"1",
 			time.RFC3339,
 			defaultTime,
+			c,
 		)
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -330,12 +356,14 @@ func TestGetTime(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
 		s, err := GetTime(
 			"cr-start",
 			"",
 			time.RFC3339,
 			defaultTime,
+			c,
 		)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
@@ -349,8 +377,9 @@ func TestGetTime(t *testing.T) {
 
 func TestIsEnabled(t *testing.T) {
 	t.Run("flag exists, returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabled("is-enabled", "1", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabled("is-enabled", "1", false, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -360,8 +389,9 @@ func TestIsEnabled(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabled("not-there", "1", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabled("not-there", "1", false, c)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -371,8 +401,9 @@ func TestIsEnabled(t *testing.T) {
 		}
 	})
 	t.Run("no user id, still returns value", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabled("is-enabled", "", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabled("is-enabled", "", false, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -385,8 +416,9 @@ func TestIsEnabled(t *testing.T) {
 
 func TestIsEnabledByID(t *testing.T) {
 	t.Run("flag exists, user id is in list, returns enabled", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabledByID("is-enabled-for-user", "9", "3", "user-id", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabledByID("is-enabled-for-user", "9", "3", "user-id", false, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -396,8 +428,9 @@ func TestIsEnabledByID(t *testing.T) {
 		}
 	})
 	t.Run("flag exists, user id not in list, returns disabled", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabledByID("is-enabled-for-user", "9", "4", "user-id", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabledByID("is-enabled-for-user", "9", "4", "user-id", false, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -407,8 +440,9 @@ func TestIsEnabledByID(t *testing.T) {
 		}
 	})
 	t.Run("flag doesnt exist, return default", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabledByID("not-exists", "9", "4", "user-id", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabledByID("not-exists", "9", "4", "user-id", false, c)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -418,8 +452,9 @@ func TestIsEnabledByID(t *testing.T) {
 		}
 	})
 	t.Run("no user id in context eval, user id is in list, returns enabled", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabledByID("is-enabled-for-user", "", "3", "user-id", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabledByID("is-enabled-for-user", "", "3", "user-id", false, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -429,8 +464,9 @@ func TestIsEnabledByID(t *testing.T) {
 		}
 	})
 	t.Run("no user id in context eval, user id not in list, returns disabled", func(t *testing.T) {
-		setupClient(t, "flags.goff.yaml")
-		b, err := IsEnabledByID("is-enabled-for-user", "", "4", "user-id", false)
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+		b, err := IsEnabledByID("is-enabled-for-user", "", "4", "user-id", false, c)
 		if err != nil {
 			t.Fatalf("unexpected error getting flag value: %v", err)
 		}
@@ -444,8 +480,9 @@ func TestIsEnabledByID(t *testing.T) {
 func TestIsEnabledByIDList(t *testing.T) {
 	t.Run("item is an int", func(t *testing.T) {
 		t.Run("flag exists, user id is in list, returns enabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list", "9", 3, false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list", "9", 3, false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -455,8 +492,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("flag exists, user id not in list, returns disabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list", "9", 4, false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list", "9", 4, false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -466,8 +504,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("flag doesnt exist, return default", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("not-exists", "9", 4, false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("not-exists", "9", 4, false, c)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -477,8 +516,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("no user id in context eval, user id is in list, returns enabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list", "", 3, false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list", "", 3, false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -488,8 +528,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("no user id in context eval, user id not in list, returns disabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list", "", 4, false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list", "", 4, false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -501,8 +542,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 	})
 	t.Run("item is a string", func(t *testing.T) {
 		t.Run("flag exists, user id is in list, returns enabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list-string", "9", "3", false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list-string", "9", "3", false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -512,8 +554,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("flag exists, user id not in list, returns disabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list-string", "9", "4", false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list-string", "9", "4", false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -523,8 +566,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("flag doesnt exist, return default", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("not-exists", "9", "4", false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("not-exists", "9", "4", false, c)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -534,8 +578,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("no user id in context eval, user id is in list, returns enabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list-string", "", "3", false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list-string", "", "3", false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -545,8 +590,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 			}
 		})
 		t.Run("no user id in context eval, user id not in list, returns disabled", func(t *testing.T) {
-			setupClient(t, "flags.goff.yaml")
-			b, err := IsEnabledByIDList("ff-json-list-string", "", "4", false)
+			c := setupClient(t, "flags.goff.yaml")
+			defer c.Close()
+			b, err := IsEnabledByIDList("ff-json-list-string", "", "4", false, c)
 			if err != nil {
 				t.Fatalf("unexpected error getting flag value: %v", err)
 			}
@@ -560,6 +606,9 @@ func TestIsEnabledByIDList(t *testing.T) {
 
 func TestRefresh(t *testing.T) {
 	t.Run("refresh is called and refreshed time is updated", func(t *testing.T) {
+		c := setupClient(t, "flags.goff.yaml")
+		defer c.Close()
+
 		tmp, err := os.CreateTemp("", "")
 		if err != nil {
 			t.Fatalf("unexpected error creating temp file: %v", err)
@@ -578,18 +627,7 @@ func TestRefresh(t *testing.T) {
 			t.Fatalf("unexpected error writing to temp file: %v", err)
 		}
 
-		err = NewClient(Config{
-			PollingInterval: 10 * time.Minute,
-			Retrievers: []retriever.Retriever{
-				&fileretriever.Retriever{Path: tmp.Name()},
-			},
-		})
-		if err != nil {
-			t.Fatalf("unexpected error creating temp file: %v", err)
-		}
-		defer Close()
-
-		refreshTime := ffclient.GetCacheRefreshDate()
+		refreshTime := c.GetCacheRefreshDate()
 
 		newFlag := `ff-test:
   metadata:
@@ -611,13 +649,13 @@ func TestRefresh(t *testing.T) {
 			t.Fatalf("failed to write new flag to file: %v", err)
 		}
 
-		if refreshTime != ffclient.GetCacheRefreshDate() {
+		if refreshTime != c.GetCacheRefreshDate() {
 			t.Fatal("cache refreshed unexpectedly")
 		}
 
-		Refresh()
+		Refresh(c)
 
-		if refreshTime == ffclient.GetCacheRefreshDate() {
+		if refreshTime == c.GetCacheRefreshDate() {
 			t.Error("expected refresh time to have updated")
 		}
 	})
@@ -625,6 +663,9 @@ func TestRefresh(t *testing.T) {
 
 func TestNewClient(t *testing.T) {
 	t.Run("flag file isnt available", func(t *testing.T) {
+		// because we're mixing singleton and `New` in this file,
+		// we need to ensure the instance is closed before this test
+		ffclient.Close()
 		err := NewClient(Config{
 			PollingInterval: 10 * time.Second,
 			Retrievers: []retriever.Retriever{

@@ -41,30 +41,61 @@ func Close() {
 	ffclient.Close()
 }
 
-func IsEnabledByID(flag, userID, id, lookup string, defaultValue bool) (bool, error) {
+func IsEnabledByID(
+	flag,
+	userID,
+	id,
+	lookup string,
+	defaultValue bool,
+	client ...*ffclient.GoFeatureFlag,
+) (bool, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContextBuilder(userID).AddCustom(lookup, id).Build()
+	if len(client) > 0 && client[0] != nil {
+		return client[0].BoolVariation(flag, c, defaultValue)
+	}
 	return ffclient.BoolVariation(flag, c, defaultValue)
 }
 
-func IsEnabled(flag, userID string, defaultValue bool) (bool, error) {
+func IsEnabled(
+	flag,
+	userID string,
+	defaultValue bool,
+	client ...*ffclient.GoFeatureFlag,
+) (bool, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContext(userID)
+	if len(client) > 0 && client[0] != nil {
+		return client[0].BoolVariation(flag, c, defaultValue)
+	}
 	return ffclient.BoolVariation(flag, c, defaultValue)
 }
 
-func GetTime(flag, userID, layout string, defaultValue time.Time) (time.Time, error) {
+func GetTime(
+	flag,
+	userID,
+	layout string,
+	defaultValue time.Time,
+	client ...*ffclient.GoFeatureFlag,
+) (time.Time, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContext(userID)
-	s, err := ffclient.StringVariation(flag, c, defaultValue.Format(layout))
-	if err != nil {
-		return defaultValue, fmt.Errorf("failed to get flag %s: %w", flag, err)
+	var s string
+	var clientErr error
+	if len(client) > 0 && client[0] != nil {
+		s, clientErr = client[0].StringVariation(flag, c, defaultValue.Format(layout))
+	} else {
+		s, clientErr = ffclient.StringVariation(flag, c, defaultValue.Format(layout))
+	}
+
+	if clientErr != nil {
+		return defaultValue, fmt.Errorf("failed to get flag %s: %w", flag, clientErr)
 	}
 	t, err := time.Parse(layout, s)
 	if err != nil {
@@ -73,31 +104,62 @@ func GetTime(flag, userID, layout string, defaultValue time.Time) (time.Time, er
 	return t, nil
 }
 
-func GetInt(flag, userID string, defaultValue int) (int, error) {
+func GetInt(
+	flag,
+	userID string,
+	defaultValue int,
+	client ...*ffclient.GoFeatureFlag,
+) (int, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContext(userID)
+	if len(client) > 0 && client[0] != nil {
+		return client[0].IntVariation(flag, c, defaultValue)
+	}
 	return ffclient.IntVariation(flag, c, defaultValue)
 }
 
-func GetFloat(flag, userID string, defaultValue float64) (float64, error) {
+func GetFloat(
+	flag,
+	userID string,
+	defaultValue float64,
+	client ...*ffclient.GoFeatureFlag,
+) (float64, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContext(userID)
+
+	if len(client) > 0 && client[0] != nil {
+		return client[0].Float64Variation(flag, c, defaultValue)
+	}
+
 	return ffclient.Float64Variation(flag, c, defaultValue)
 }
 
-func GetString(flag, userID string, defaultValue string) (string, error) {
+func GetString(
+	flag,
+	userID string,
+	defaultValue string,
+	client ...*ffclient.GoFeatureFlag,
+) (string, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContext(userID)
+	if len(client) > 0 && client[0] != nil {
+		return client[0].StringVariation(flag, c, defaultValue)
+	}
 	return ffclient.StringVariation(flag, c, defaultValue)
 }
 
-func GetJSONStruct[T any](flag, userID string, defaultValue T) (T, error) {
+func GetJSONStruct[T any](
+	flag,
+	userID string,
+	defaultValue T,
+	client ...*ffclient.GoFeatureFlag,
+) (T, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
@@ -113,9 +175,15 @@ func GetJSONStruct[T any](flag, userID string, defaultValue T) (T, error) {
 		return defaultValue, fmt.Errorf("failed to unmarshal default value to map: %w", err)
 	}
 
-	j, err := ffclient.JSONVariation(flag, c, defaultMap)
-	if err != nil {
-		return defaultValue, fmt.Errorf("failed to get flag %s: %w", flag, err)
+	var j map[string]any
+	var clientErr error
+	if len(client) > 0 && client[0] != nil {
+		j, clientErr = client[0].JSONVariation(flag, c, defaultMap)
+	} else {
+		j, clientErr = ffclient.JSONVariation(flag, c, defaultMap)
+	}
+	if clientErr != nil {
+		return defaultValue, fmt.Errorf("failed to get flag %s: %w", flag, clientErr)
 	}
 
 	result, err := json.Marshal(j)
@@ -131,22 +199,42 @@ func GetJSONStruct[T any](flag, userID string, defaultValue T) (T, error) {
 	return v, nil
 }
 
-func GetJSONMap(flag, userID string, defaultValue map[string]any) (map[string]any, error) {
+func GetJSONMap(
+	flag,
+	userID string,
+	defaultValue map[string]any,
+	client ...*ffclient.GoFeatureFlag,
+) (map[string]any, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContext(userID)
+	if len(client) > 0 && client[0] != nil {
+		return client[0].JSONVariation(flag, c, defaultValue)
+	}
 	return ffclient.JSONVariation(flag, c, defaultValue)
 }
 
-func IsEnabledByIDList[T comparable](flag, userID string, lookup T, defaultValue bool) (bool, error) {
+func IsEnabledByIDList[T comparable](
+	flag,
+	userID string,
+	lookup T,
+	defaultValue bool,
+	client ...*ffclient.GoFeatureFlag,
+) (bool, error) {
 	if userID == "" {
 		userID = "anonymous"
 	}
 	c := ffcontext.NewEvaluationContext(userID)
-	l, err := ffclient.JSONArrayVariation(flag, c, []any{})
-	if err != nil {
-		return defaultValue, err
+	var l []any
+	var clientErr error
+	if len(client) > 0 && client[0] != nil {
+		l, clientErr = client[0].JSONArrayVariation(flag, c, []any{})
+	} else {
+		l, clientErr = ffclient.JSONArrayVariation(flag, c, []any{})
+	}
+	if clientErr != nil {
+		return defaultValue, clientErr
 	}
 	if slices.ContainsFunc(l, func(i any) bool {
 		// assuming ID's are always ints or strings, so convert json numbers to int
@@ -167,6 +255,11 @@ func IsEnabledByIDList[T comparable](flag, userID string, lookup T, defaultValue
 	return false, nil
 }
 
-func Refresh() {
+func Refresh(client ...*ffclient.GoFeatureFlag) {
+	if len(client) > 0 && client[0] != nil {
+		client[0].ForceRefresh()
+		return
+	}
 	ffclient.ForceRefresh()
+	return
 }
