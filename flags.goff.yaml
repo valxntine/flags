@@ -80,3 +80,25 @@ ff-json:
       "default": 1200
   defaultRule:
     variation: times
+
+ff-json-list:
+  metadata:
+    description: Example flag for configurable list
+  variations:
+    users:
+      - 1
+      - 2
+      - 3
+  defaultRule:
+    variation: users
+
+ff-json-list-string:
+  metadata:
+    description: Example flag for configurable list
+  variations:
+    users:
+      - "1"
+      - "2"
+      - "3"
+  defaultRule:
+    variation: users

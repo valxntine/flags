@@ -1,0 +1,127 @@
+{
+  "is-enabled": {
+    "metadata": {
+      "description": "Enable or disable feature X"
+    },
+    "variations": {
+      "enabled": true,
+      "disabled": false
+    },
+    "defaultRule": {
+      "variation": "enabled"
+    }
+  },
+  "is-enabled-for-user": {
+    "metadata": {
+      "description": "Enable feature X by Y ID"
+    },
+    "variations": {
+      "enabled": true,
+      "disabled": false
+    },
+    "targeting": [
+      {
+        "query": "{\"in\": [{\"var\": \"user-id\"}, [\"1\", \"2\", \"3\"]]}",
+        "variation": "enabled"
+      }
+    ],
+    "defaultRule": {
+      "variation": "disabled"
+    }
+  },
+  "cr-start": {
+    "metadata": {
+      "description": "Example flag for a configurable time"
+    },
+    "variations": {
+      "start": "2025-07-18T22:37:22.176Z"
+    },
+    "defaultRule": {
+      "variation": "start"
+    }
+  },
+  "ff-description": {
+    "metadata": {
+      "description": "Example flag for a configurable string"
+    },
+    "variations": {
+      "christmas": "Merry Christmas!",
+      "easter": "Something about chocolate eggs",
+      "halloween": "Boo!"
+    },
+    "defaultRule": {
+      "variation": "easter"
+    }
+  },
+  "ff-number": {
+    "metadata": {
+      "description": "Example flag for a configurable integer/id/etc"
+    },
+    "variations": {
+      "id": 9081
+    },
+    "defaultRule": {
+      "variation": "id"
+    }
+  },
+  "ff-float": {
+    "metadata": {
+      "description": "Example flag for a configurable float"
+    },
+    "variations": {
+      "pi": 3.14159
+    },
+    "defaultRule": {
+      "variation": "pi"
+    }
+  },
+  "ff-json": {
+    "metadata": {
+      "description": "Example flag for configurable JSON"
+    },
+    "variations": {
+      "times": {
+        "p50": 40,
+        "p75": 50,
+        "p95": 70,
+        "p99": 150,
+        "p99_5": 225,
+        "p99_999": 500,
+        "default": 1200
+      }
+    },
+    "defaultRule": {
+      "variation": "times"
+    }
+  },
+  "ff-json-list": {
+    "metadata": {
+      "description": "Example flag for configurable list"
+    },
+    "variations": {
+      "users": [
+        1,
+        2,
+        3
+      ]
+    },
+    "defaultRule": {
+      "variation": "users"
+    }
+  },
+  "ff-json-list-string": {
+    "metadata": {
+      "description": "Example flag for configurable list"
+    },
+    "variations": {
+      "users": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    "defaultRule": {
+      "variation": "users"
+    }
+  }
+}

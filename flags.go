@@ -3,25 +3,34 @@ package flags
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	ffclient "github.com/thomaspoignant/go-feature-flag"
 	"github.com/thomaspoignant/go-feature-flag/ffcontext"
 	"github.com/thomaspoignant/go-feature-flag/retriever"
+	"golang.org/x/exp/slices"
 )
 
 type Config struct {
 	PollingInterval time.Duration
 	Retrievers      []retriever.Retriever
+	FileFormat      string
 }
 
 func NewClient(cfg Config) error {
 	if cfg.Retrievers == nil {
 		return fmt.Errorf("ffclient expects at least 1 retriever")
 	}
+
+	format := "yaml"
+	if cfg.FileFormat != "" {
+		format = cfg.FileFormat
+	}
 	err := ffclient.Init(ffclient.Config{
 		PollingInterval: cfg.PollingInterval,
 		Retrievers:      cfg.Retrievers,
+		FileFormat:      format,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to init goff: %v", err)
@@ -129,6 +138,35 @@ func GetJSONMap(flag, userID string, defaultValue map[string]any) (map[string]an
 	}
 	c := ffcontext.NewEvaluationContext(userID)
 	return ffclient.JSONVariation(flag, c, defaultValue)
+}
+
+func IsEnabledByIDList[T comparable](flag, userID string, lookup T, defaultValue bool) (bool, error) {
+	if userID == "" {
+		userID = "anonymous"
+	}
+	c := ffcontext.NewEvaluationContext(userID)
+	l, err := ffclient.JSONArrayVariation(flag, c, []any{})
+	if err != nil {
+		return defaultValue, err
+	}
+	t := reflect.TypeOf(lookup)
+	if slices.ContainsFunc(l, func(i any) bool {
+		// assuming ID's are always ints or strings, so convert json numbers to int
+		if f, fOk := i.(float64); fOk {
+			i = int(f)
+		}
+		v, ok := i.(T)
+		if !ok {
+			return false
+		}
+		if v == lookup {
+			return true
+		}
+		return false
+	}) {
+		return true, nil
+	}
+	return false, nil
 }
 
 func Refresh() {
