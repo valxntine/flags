@@ -3,7 +3,6 @@ package flags
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	ffclient "github.com/thomaspoignant/go-feature-flag"
@@ -149,7 +148,6 @@ func IsEnabledByIDList[T comparable](flag, userID string, lookup T, defaultValue
 	if err != nil {
 		return defaultValue, err
 	}
-	t := reflect.TypeOf(lookup)
 	if slices.ContainsFunc(l, func(i any) bool {
 		// assuming ID's are always ints or strings, so convert json numbers to int
 		if f, fOk := i.(float64); fOk {
